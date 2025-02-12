@@ -1,0 +1,17 @@
+# Dataset files
+dataset_*
+sentinel
+lsat_8
+landsat-8_data.zip
+sentinel-2_data.zip
+
+# Logs
+lightning_logs
+tb_logs
+
+# Results
+results*
+model_checkpoints
+
+# Cache
+__pycache__
