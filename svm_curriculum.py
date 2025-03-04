@@ -81,6 +81,10 @@ def get_train_df(segs_df, ordering, n_samples, prev_samples, seed=42):
     n_samples_forest = min(n_samples, remaining_forest)
     n_samples_nonforest = min(n_samples, remaining_nonforest)
 
+    # Casting n_samples_* to be signed integers
+    n_samples_forest = np.int8(n_samples_forest)
+    n_samples_nonforest = np.int8(n_samples_nonforest)
+
     if ordering == "Random":
         forest_df = forest_df.sample(frac=1, random_state=seed).copy()
         nonforest_df = nonforest_df.sample(frac=1, random_state=seed).copy()
