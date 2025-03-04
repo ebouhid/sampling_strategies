@@ -174,6 +174,7 @@ if __name__ == "__main__":
     parser.add_argument("--segs_dir", type=str, required=True)
     parser.add_argument("--output", "-o", type=str, required=True)
     parser.add_argument("--exp_name", '-e', type=str, default="default")
+    parser.add_argument("--checkpoint_dir", type=str, default="checkpoints")
 
     args = parser.parse_args()
 
@@ -186,7 +187,7 @@ if __name__ == "__main__":
 
     res_df = []
     criteria = segs_df.columns[-1]
-    base_checkpoint_dir = "model_checkpoints"
+    base_checkpoint_dir = args.checkpoint_dir
 
     step = 5  # Step in percentage
     n_samples = np.ceil(
