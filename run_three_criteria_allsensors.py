@@ -37,7 +37,7 @@ def main():
             ckpt_path = os.path.join(output_dir, "model_checkpoints")
             
             cmd = [
-                'python', 'svm_curriculum.py',
+                'python', 'multimodel_curriculum.py',
                 '--segs_csv', segs_csv,
                 '--segs_dir', segs_dir,
                 '--output', output_csv,
