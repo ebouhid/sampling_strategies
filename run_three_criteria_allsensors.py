@@ -34,7 +34,7 @@ def main():
             segs_dir = os.path.join('dataset_har', dataset)
             output_csv = os.path.join(output_dir, f"{dataset}_{criterion}.csv")
             out_file_path = os.path.join(output_dir, f"{dataset}_{criterion}.out")
-            ckpt_path = os.path.join(output_dir, "model_checkpoints")
+            ckpt_path = os.path.join(output_dir, f"model_checkpoints_{dataset}_{criterion}")
             
             cmd = [
                 'python', 'multimodel_curriculum.py',
