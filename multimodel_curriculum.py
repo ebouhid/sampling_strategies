@@ -247,7 +247,7 @@ if __name__ == "__main__":
     for model_name, (model_class, model_params) in models.items():
         print(f"\n=== Training {model_name} classifier ===")
 
-        for order_method in ["Increasing", "Decreasing", "Edges"]:
+        for order_method in ["Random", "Increasing", "Decreasing", "Edges"]:
             prev_samples = {'forest': 0, 'nonforest': 0}
             prev_train_df = pd.DataFrame()
             checkpoint_dir = create_checkpoint_dir(
