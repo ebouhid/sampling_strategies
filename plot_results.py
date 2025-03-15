@@ -77,11 +77,13 @@ def plot_balanced_accuracy(csv_path, classifier_name=None, title=None):
 
 if __name__ == "__main__":
     import os
+    import argparse
 
-    # Example usage:
-    # plot_balanced_accuracy("mydata.csv", classifier_name="Ridge", title="My Sentinel Sensor Plot")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--result_root", "-r", help="Root directory containing CSV files")
+    args = parser.parse_args()
 
-    result_root = "results_multimodel/"
+    result_root = args.result_root
 
     avail_csvs = os.listdir(result_root)
     avail_csvs = [csv for csv in avail_csvs if csv.endswith(".csv")]
