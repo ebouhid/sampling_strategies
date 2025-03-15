@@ -33,17 +33,26 @@ def plot_balanced_accuracy(csv_path, classifier_name=None, title=None):
     fig, ax = plt.subplots(figsize=(8, 6))
 
     # Plot each ordering
-    for ordering in orderings:
-        subset = df[df['Ordering'] == ordering].copy()
-        # Sort by training percentage so lines don't get jumbled
-        subset.sort_values(by='Train_pct', inplace=True)
-        
-        ax.plot(
-            subset['Train_pct'],
-            subset['Balanced_accuracy'],
-            marker='o',
-            label=ordering
-        )
+    colors = {
+        "Increasing": "blue",
+        "Decreasing": "red",
+        "Edges": "green",
+        "Random": "gold"
+    }
+
+    for ordering in ["Increasing", "Decreasing", "Edges", "Random"]:
+        if ordering in orderings:
+            subset = df[df['Ordering'] == ordering].copy()
+            subset.sort_values(by='Train_pct', inplace=True)
+            ax.plot(
+                subset['Train_pct'],
+                subset['Balanced_accuracy'],
+                marker='o',
+                label=ordering,
+                color=colors[ordering]
+            )
+        else:
+            print(f"No data for ordering '{ordering}' with classifier '{classifier_name}' in {csv_path}")
 
     # Label axes
     ax.set_xlabel("Training Percentage")
@@ -64,9 +73,7 @@ def plot_balanced_accuracy(csv_path, classifier_name=None, title=None):
     ax.legend(title="Ordering")
 
     # Optionally tweak the y-axis range or other aesthetics
-    min_bal_acc = df['Balanced_accuracy'].min()
-    min_bal_acc = min_bal_acc * 0.7 # Just to look pretty
-    ax.set_ylim([min_bal_acc, 1.0])
+    ax.set_ylim([0.3, 1.0])
     
     plt.tight_layout()
     png_save_name = csv_path.replace(".csv", f"_{classifier_name}.png")
