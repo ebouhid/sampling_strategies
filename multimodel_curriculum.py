@@ -22,20 +22,10 @@ def get_train_data(segs_dir, train_df):
         segment_id = row["Segment_id"]
         segment_class = 'forest' if row["Majority_response"] == "Forest" else 'nonforest'
 
-        if segment_class == 'forest':
-            segment = np.load(os.path.join(
-                segs_dir, f"{region}_{segment_id}.npy"))
-            segment = segment.flatten()
-            # segment = np.expand_dims(segment, axis=0)
-            X_train.append(segment)
-            y_train.append(0)
-        elif segment_class == 'nonforest':
-            segment = np.load(os.path.join(
-                segs_dir, f"{region}_{segment_id}.npy"))
-            segment = segment.flatten()
-            # segment = np.expand_dims(segment, axis=0)
-            X_train.append(segment)
-            y_train.append(1)
+        segment = np.load(os.path.join(segs_dir, f"{region}_{segment_id}.npy"))
+        segment = segment.flatten()
+        X_train.append(segment)
+        y_train.append(0 if segment_class == 'forest' else 1)
 
     assert len(X_train) == len(y_train), "X_train and y_train have different lengths ({} vs {})".format(
         len(X_train), len(y_train))
@@ -47,18 +37,11 @@ def get_test_data(segs_dir):
     y_test = []
 
     for file in os.listdir(segs_dir):
-        if "-forest" in file:
-            segment = np.load(os.path.join(segs_dir, file))
-            segment = segment.flatten()
-            # segment = np.expand_dims(segment, axis=0)
-            X_test.append(segment)
-            y_test.append(0)
-        else:
-            segment = np.load(os.path.join(segs_dir, file))
-            segment = segment.flatten()
-            # segment = np.expand_dims(segment, axis=0)
-            X_test.append(segment)
-            y_test.append(1)
+        segment = np.load(os.path.join(segs_dir, file))
+        segment = segment.flatten()
+        X_test.append(segment)
+        # If filename contains "-forest", label as 0; else label as 1
+        y_test.append(0 if "-forest" in file else 1)
 
     return X_test, y_test
 
@@ -93,104 +76,137 @@ def get_train_df(segs_df, ordering, n_samples, prev_samples, seed=42):
         forest_df = forest_df.sample(frac=1, random_state=seed).copy()
         nonforest_df = nonforest_df.sample(frac=1, random_state=seed).copy()
 
-        forest_sample = forest_df.iloc[prev_samples['forest']
-            :prev_samples['forest'] + n_samples_forest]
-        nonforest_sample = nonforest_df.iloc[prev_samples['nonforest']
-            :prev_samples['nonforest'] + n_samples_nonforest]
+        forest_sample = forest_df.iloc[prev_samples['forest']:prev_samples['forest'] + n_samples_forest]
+        nonforest_sample = nonforest_df.iloc[prev_samples['nonforest']:prev_samples['nonforest'] + n_samples_nonforest]
 
     elif ordering == "Decreasing":
         forest_df.sort_values(criteria, ascending=False, inplace=True)
         nonforest_df.sort_values(criteria, ascending=False, inplace=True)
-        forest_sample = forest_df.iloc[prev_samples['forest']
-            :prev_samples['forest'] + n_samples_forest]
-        nonforest_sample = nonforest_df.iloc[prev_samples['nonforest']
-            :prev_samples['nonforest'] + n_samples_nonforest]
+        forest_sample = forest_df.iloc[prev_samples['forest']:prev_samples['forest'] + n_samples_forest]
+        nonforest_sample = nonforest_df.iloc[prev_samples['nonforest']:prev_samples['nonforest'] + n_samples_nonforest]
 
     elif ordering == "Increasing":
         forest_df.sort_values(criteria, ascending=True, inplace=True)
         nonforest_df.sort_values(criteria, ascending=True, inplace=True)
-        forest_sample = forest_df.iloc[prev_samples['forest']
-            :prev_samples['forest'] + n_samples_forest]
-        nonforest_sample = nonforest_df.iloc[prev_samples['nonforest']
-            :prev_samples['nonforest'] + n_samples_nonforest]
+        forest_sample = forest_df.iloc[prev_samples['forest']:prev_samples['forest'] + n_samples_forest]
+        nonforest_sample = nonforest_df.iloc[prev_samples['nonforest']:prev_samples['nonforest'] + n_samples_nonforest]
 
     elif ordering == "Edges":
-        # Sort DataFrames by the criteria.
         forest_df.sort_values(by=criteria, ascending=False, inplace=True)
         nonforest_df.sort_values(by=criteria, ascending=False, inplace=True)
 
         forest_df = forest_df.reset_index(drop=True)
         nonforest_df = nonforest_df.reset_index(drop=True)
 
-        # Calculate the number of samples for top and bottom edges
         half_samples_forest = n_samples_forest // 2 if n_samples_forest % 2 == 0 else n_samples_forest // 2 + 1
         half_samples_nonforest = n_samples_nonforest // 2 if n_samples_nonforest % 2 == 0 else n_samples_nonforest // 2 + 1
 
-        # Select samples from the top edge
-        forest_top_edge = forest_df.iloc[prev_samples['forest'] //
-                                         2:prev_samples['forest'] // 2 + half_samples_forest]
-        nonforest_top_edge = nonforest_df.iloc[prev_samples['nonforest'] //
-                                               2:prev_samples['nonforest'] // 2 + half_samples_nonforest]
+        forest_top_edge = forest_df.iloc[prev_samples['forest'] // 2:prev_samples['forest'] // 2 + half_samples_forest]
+        nonforest_top_edge = nonforest_df.iloc[prev_samples['nonforest'] // 2:prev_samples['nonforest'] // 2 + half_samples_nonforest]
 
-        forest_bottomlim = - \
-            prev_samples['forest'] // 2 if prev_samples['forest'] > 0 else None
-        nonforest_bottomlim = - \
-            prev_samples['nonforest'] // 2 if prev_samples['nonforest'] > 0 else None
+        forest_bottomlim = -prev_samples['forest'] // 2 if prev_samples['forest'] > 0 else None
+        nonforest_bottomlim = -prev_samples['nonforest'] // 2 if prev_samples['nonforest'] > 0 else None
 
-        # Select samples from the bottom edge ensuring no overlap with the top edge
-        forest_bottom_edge = forest_df.iloc[-(half_samples_forest + prev_samples['forest'] // 2)                                            :forest_bottomlim].drop(forest_top_edge.index, errors='ignore')
-        nonforest_bottom_edge = nonforest_df.iloc[-(half_samples_nonforest + prev_samples['nonforest'] // 2)                                                  :nonforest_bottomlim].drop(nonforest_top_edge.index, errors='ignore')
+        forest_bottom_edge = forest_df.iloc[-(half_samples_forest + prev_samples['forest'] // 2):forest_bottomlim].drop(forest_top_edge.index, errors='ignore')
+        nonforest_bottom_edge = nonforest_df.iloc[-(half_samples_nonforest + prev_samples['nonforest'] // 2):nonforest_bottomlim].drop(nonforest_top_edge.index, errors='ignore')
 
-        print(
-            f"prev_samples_forest: {prev_samples['forest']}, prev_samples_nonforest: {prev_samples['nonforest']}")
-        print(
-            f"n_samples_forest: {n_samples_forest}, n_samples_nonforest: {n_samples_nonforest}")
+        print(f"prev_samples_forest: {prev_samples['forest']}, prev_samples_nonforest: {prev_samples['nonforest']}")
+        print(f"n_samples_forest: {n_samples_forest}, n_samples_nonforest: {n_samples_nonforest}")
+        print(f"Top edge: {len(forest_top_edge)} forest samples, {len(nonforest_top_edge)} nonforest samples")
+        print(f"Bottom edge: {len(forest_bottom_edge)} forest samples, {len(nonforest_bottom_edge)} nonforest samples")
+        print(f"Attempted bottom edge: {-(half_samples_forest + prev_samples['forest'] // 2)}:{forest_bottomlim}, {-(half_samples_nonforest + prev_samples['nonforest'] // 2)}:{nonforest_bottomlim}")
 
-        print(
-            f"Top edge: {len(forest_top_edge)} forest samples, {len(nonforest_top_edge)} nonforest samples")
-        print(
-            f"Bottom edge: {len(forest_bottom_edge)} forest samples, {len(nonforest_bottom_edge)} nonforest samples")
-        print(
-            f"Attempted bottom edge: {-(half_samples_forest + prev_samples['forest'] // 2)}:{forest_bottomlim}, {-(half_samples_nonforest + prev_samples['nonforest'] // 2)}:{nonforest_bottomlim}")
+        forest_sample = pd.concat([forest_top_edge, forest_bottom_edge]).drop_duplicates()
+        nonforest_sample = pd.concat([nonforest_top_edge, nonforest_bottom_edge]).drop_duplicates()
 
-        # Combine top and bottom edges into one DataFrame
-        forest_sample = pd.concat(
-            [forest_top_edge, forest_bottom_edge]).drop_duplicates()
-        nonforest_sample = pd.concat(
-            [nonforest_top_edge, nonforest_bottom_edge]).drop_duplicates()
+        print(f"Combined: {len(forest_sample)} forest samples, {len(nonforest_sample)} nonforest samples")
 
-        print(
-            f"Combined: {len(forest_sample)} forest samples, {len(nonforest_sample)} nonforest samples")
-
-        # # Ensure the correct number of samples are selected
-        # if len(forest_sample) < n_samples_forest:
-        #     needed = n_samples_forest - len(forest_sample)
-        #     additional_forest_samples = forest_df.drop(forest_sample.index, errors='ignore').head(needed)
-        #     forest_sample = pd.concat([forest_sample, additional_forest_samples])
-
-        # if len(nonforest_sample) < n_samples_nonforest:
-        #     needed = n_samples_nonforest - len(nonforest_sample)
-        #     additional_nonforest_samples = nonforest_df.drop(nonforest_sample.index, errors='ignore').head(needed)
-        #     nonforest_sample = pd.concat([nonforest_sample, additional_nonforest_samples])
-
-        # Reset indices to handle duplicates and index continuity
         forest_sample.reset_index(drop=True, inplace=True)
         nonforest_sample.reset_index(drop=True, inplace=True)
-
-        # Combine into final training DataFrame
         train_df = pd.concat([forest_sample, nonforest_sample])
-
     else:
-        raise ValueError(
-            "Invalid ordering! Must be one of: 'Decreasing', 'Increasing', 'Edges'")
+        raise ValueError("Invalid ordering! Must be one of: 'Decreasing', 'Increasing', 'Edges', 'Random'")
 
     train_df = pd.concat([forest_sample, nonforest_sample])
-
-    # Update previous samples count
     prev_samples['forest'] += len(forest_sample)
     prev_samples['nonforest'] += len(nonforest_sample)
 
     return train_df, prev_samples
+
+
+def run_training_iterations(model_name, model_class, model_params, ordering, segs_df,
+                            n_samples, segs_dir, X_test, y_test, checkpoint_dir, step, seed=None):
+    """
+    Execute the inner training loop for a given ordering (and optional seed).
+    Returns a list of result dictionaries.
+    """
+    prev_samples = {'forest': 0, 'nonforest': 0}
+    prev_train_df = pd.DataFrame()
+    prev_pct = None
+    iteration_results = []
+    for i, train_pct in enumerate([x/100 for x in range(step, 101, step)]):
+        # Initialize or load model
+        if i == 0:
+            clf = model_class(**model_params)
+        else:
+            model_path = os.path.join(checkpoint_dir, f"{model_name}_checkpoint_{prev_pct}.pkl")
+            clf = joblib.load(model_path)
+
+        # Get training data (pass seed if provided)
+        train_df, prev_samples = get_train_df(segs_df, ordering, n_samples, prev_samples, seed if seed is not None else 42)
+        train_df = pd.concat([train_df, prev_train_df]).drop_duplicates()
+
+        # Prepare data
+        X_train, y_train = get_train_data(os.path.join(segs_dir, "train"), train_df)
+
+        # MLP-specific adjustments
+        if model_name == "MLP":
+            class_counts = np.bincount(y_train)
+            if len(class_counts) < 2:
+                print(f"Skipping {model_name} - only one class present")
+                continue
+
+            min_val_samples = 2
+            val_fraction = 0.3
+            current_val_samples = int(len(X_train) * val_fraction)
+            if current_val_samples < min_val_samples:
+                clf.set_params(early_stopping=False, validation_fraction=0.0, max_iter=200)
+            else:
+                clf.set_params(early_stopping=True, validation_fraction=val_fraction, max_iter=200)
+
+        # Train model
+        start_time = time.time()
+        try:
+            clf.fit(X_train, y_train)
+        except ValueError as e:
+            print(f"Error training {model_name}: {str(e)}")
+            continue
+        train_time = time.time() - start_time
+
+        # Save checkpoint
+        joblib.dump(clf, os.path.join(checkpoint_dir, f"{model_name}_checkpoint_{train_pct}.pkl"))
+
+        # Evaluate
+        y_pred = clf.predict(X_test)
+        bal_acc = balanced_accuracy_score(y_test, y_pred)
+
+        iteration_results.append({
+            "Classifier": model_name,
+            "Ordering": ordering,
+            "Seed": seed,
+            "Train_pct": train_pct,
+            "Balanced_accuracy": bal_acc,
+            "Train_time": train_time,
+            "Train_size": len(train_df),
+            "Test_size": len(X_test)
+        })
+
+        prev_pct = train_pct
+        prev_train_df = train_df.copy()
+
+        seed_info = f" (seed {seed})" if seed is not None else ""
+        print(f"{model_name} | {ordering}{seed_info} | {train_pct:.0%} | Acc: {bal_acc:.4f} | Time: {train_time:.1f}s")
+    return iteration_results
 
 
 if __name__ == "__main__":
@@ -227,7 +243,6 @@ if __name__ == "__main__":
         }),
         "SVM": (SVC, {
             'kernel': 'linear',
-            'C': 1.0,
             'random_state': 42
         })
     }
@@ -239,108 +254,52 @@ if __name__ == "__main__":
 
     # Calculate sample size increment
     step = 5
-    n_samples = np.ceil(
-        max(segs_df["Majority_response"].value_counts()) * (step / 100)
-    ).astype(np.uint8)
+    n_samples = np.ceil(max(segs_df["Majority_response"].value_counts()) * (step / 100)).astype(np.uint8)
 
     # Main training loop
     for model_name, (model_class, model_params) in models.items():
         print(f"\n=== Training {model_name} classifier ===")
-
         for order_method in ["Random", "Increasing", "Decreasing", "Edges"]:
-            prev_samples = {'forest': 0, 'nonforest': 0}
-            prev_train_df = pd.DataFrame()
-            checkpoint_dir = create_checkpoint_dir(
-                args.checkpoint_dir, model_name, criteria, order_method
-            )
-
-            for i, train_pct in enumerate([x/100 for x in range(step, 101, step)]):
-                # Model initialization/loading
-                if i == 0:
-                    clf = model_class(**model_params)
-                else:
-                    model_path = os.path.join(
-                        checkpoint_dir,
-                        f"{model_name}_checkpoint_{prev_pct}.pkl"
+            if order_method == "Random":
+                # For "Random", run multiple seeds and then aggregate the results.
+                random_results = []
+                seeds = range(10)
+                for seed in seeds:
+                    chkpt_dir = create_checkpoint_dir(
+                        args.checkpoint_dir, model_name, criteria, order_method + f"_seed_{seed}"
                     )
-                    clf = joblib.load(model_path)
-
-                # Get training data
-                train_df, prev_samples = get_train_df(
-                    segs_df, order_method, n_samples, prev_samples
+                    seed_results = run_training_iterations(model_name, model_class, model_params,
+                                                           order_method, segs_df, n_samples,
+                                                           os.path.join(args.segs_dir), X_test, y_test,
+                                                           chkpt_dir, step, seed)
+                    random_results.extend(seed_results)
+                # Aggregate results across seeds by train_pct (discarding std, etc.)
+                rand_df = pd.DataFrame(random_results)
+                agg_rand = rand_df.groupby("Train_pct").agg({
+                    "Balanced_accuracy": "mean",
+                    "Train_time": "mean",
+                    "Train_size": "mean",
+                    "Test_size": "mean"
+                }).reset_index()
+                for idx, row in agg_rand.iterrows():
+                    res_df.append({
+                        "Classifier": model_name,
+                        "Ordering": order_method,
+                        "Train_pct": row["Train_pct"],
+                        "Balanced_accuracy": row["Balanced_accuracy"],
+                        "Train_time": row["Train_time"],
+                        "Train_size": row["Train_size"],
+                        "Test_size": row["Test_size"]
+                    })
+            else:
+                chkpt_dir = create_checkpoint_dir(
+                    args.checkpoint_dir, model_name, criteria, order_method
                 )
-                train_df = pd.concat(
-                    [train_df, prev_train_df]).drop_duplicates()
-
-                # Prepare data
-                X_train, y_train = get_train_data(
-                    os.path.join(args.segs_dir, "train"), train_df
-                )
-
-                # MLP-specific adjustments
-                if model_name == "MLP":
-                    # Check class balance
-                    class_counts = np.bincount(y_train)
-                    if len(class_counts) < 2:
-                        print(f"Skipping {model_name} - only one class present")
-                        continue
-                        
-                    # Adjust validation parameters
-                    min_val_samples = 2  # Minimum 1 per class
-                    val_fraction = 0.3
-                    current_val_samples = int(len(X_train) * val_fraction)
-                    
-                    if current_val_samples < min_val_samples:
-                        clf.set_params(
-                            early_stopping=False,
-                            validation_fraction=0.0,
-                            max_iter=200  # Fixed epoch number
-                        )
-                    else:
-                        clf.set_params(
-                            early_stopping=True,
-                            validation_fraction=val_fraction,
-                            max_iter=200
-                        )
-
-                # Train model
-                start_time = time.time()
-                try:
-                    clf.fit(X_train, y_train)
-                except ValueError as e:
-                    print(f"Error training {model_name}: {str(e)}")
-                    continue
-
-                train_time = time.time() - start_time
-
-                # Save checkpoint
-                joblib.dump(
-                    clf,
-                    os.path.join(checkpoint_dir,
-                                 f"{model_name}_checkpoint_{train_pct}.pkl")
-                )
-
-                # Evaluate
-                y_pred = clf.predict(X_test)
-                bal_acc = balanced_accuracy_score(y_test, y_pred)
-
-                # Store results
-                res_df.append({
-                    "Classifier": model_name,
-                    "Ordering": order_method,
-                    "Train_pct": train_pct,
-                    "Balanced_accuracy": bal_acc,
-                    "Train_time": train_time,
-                    "Train_size": len(train_df),
-                    "Test_size": len(X_test)
-                })
-
-                # Update state for next iteration
-                prev_pct = train_pct
-                prev_train_df = train_df.copy()
-
-                print(f"{model_name} | {order_method} | {train_pct:.0%} | "
-                      f"Acc: {bal_acc:.4f} | Time: {train_time:.1f}s")
+                results = run_training_iterations(model_name, model_class, model_params,
+                                                  order_method, segs_df, n_samples,
+                                                  os.path.join(args.segs_dir), X_test, y_test,
+                                                  chkpt_dir, step)
+                res_df.extend(results)
 
     # Save final results
     pd.DataFrame(res_df).to_csv(
