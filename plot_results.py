@@ -70,6 +70,10 @@ def plot_balanced_accuracy(csv_path, classifier_name=None, title=None):
     
     plt.tight_layout()
     png_save_name = csv_path.replace(".csv", f"_{classifier_name}.png")
+    # Add grid lines for better readability
+    ax.grid(True, which='both', linestyle='--', linewidth=0.5, color='gray')
+
+    # Save the plot
     plt.savefig(png_save_name)
 
     # Close fig
