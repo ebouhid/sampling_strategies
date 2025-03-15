@@ -311,9 +311,6 @@ if __name__ == "__main__":
                     print(f"Error training {model_name}: {str(e)}")
                     continue
 
-                # Train model
-                start_time = time.time()
-                clf.fit(X_train, y_train)
                 train_time = time.time() - start_time
 
                 # Save checkpoint
