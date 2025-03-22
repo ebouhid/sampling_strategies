@@ -25,8 +25,8 @@ def main():
     
     # Generate all commands first
     commands = []
-    datasets = ['lsat_8', 'sentinel']
-    criteria = ['dtb', 'entropy', 'time']
+    datasets = ['sentinel'] # 'lsat_8' can be added here too
+    criteria = ['entropy', 'time']
     
     for dataset in datasets:
         for criterion in criteria:
