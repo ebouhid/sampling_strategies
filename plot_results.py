@@ -55,22 +55,24 @@ def plot_balanced_accuracy(csv_path, classifier_name=None, title=None):
             print(f"No data for ordering '{ordering}' with classifier '{classifier_name}' in {csv_path}")
 
     # Label axes
-    ax.set_xlabel("Training Percentage")
-    ax.set_ylabel("Balanced Accuracy")
+    ax.set_xlabel("Training Percentage", fontsize=18)
+    ax.set_ylabel("Balanced Accuracy", fontsize=18)
+    ax.tick_params(axis='both', which='major', labelsize=18)
 
     # Set a title
     if title is None:
         title = f"Balanced Accuracy vs Training Percentage"
         if classifier_name is not None:
             title += f" for {classifier_name}"
-        if criteria is not None:
-            title += f" ({criteria})"
-        if sensor is not None:
-            title += f" | Sensor: {sensor.capitalize()}"
-    ax.set_title(title)
+        # if criteria is not None:
+        #     title += f" ({criteria})"
+        # if sensor is not None:
+        #     title += f" | Sensor: {sensor.capitalize()}"
+    ax.set_title(title, fontsize=18)
 
     # Show a legend
     ax.legend(title="Ordering")
+    ax.legend(title="Ordering", loc="lower right", fontsize=18, title_fontsize=18)
 
     # Optionally tweak the y-axis range or other aesthetics
     ax.set_ylim([0.3, 1.0])
